@@ -17,9 +17,13 @@
       </div>
     </div>
 
-    <div class="user-box">
-      <label for="userName">Tu nombre</label>
-      <input id="userName" type="text" placeholder="¿Quién eres?" />
+    <div class="header-actions">
+      <div class="user-box">
+        <label for="userName">Tu nombre</label>
+        <input id="userName" type="text" placeholder="¿Quién eres?" />
+      </div>
+      <button class="btn btn-ghost" id="recipientsBtn" title="Destinatarios de notificaciones">👥 Destinatarios</button>
+      <button class="btn btn-ghost" id="logoutBtn" title="Cerrar sesión">🚪 Salir</button>
     </div>
   </header>
 
@@ -53,7 +57,7 @@
     </section>
   </main>
 
-  <!-- Modal detalle/edición -->
+  <!-- Modal detalle/edición de evento -->
   <div class="modal-backdrop" id="modal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <header class="modal-header">
@@ -71,6 +75,16 @@
           <div><dt>📍 Lugar</dt><dd id="detailLocation">—</dd></div>
           <div><dt>👤 Responsable</dt><dd id="detailAssignee">—</dd></div>
           <div class="full"><dt>📝 Descripción</dt><dd id="detailDescription">—</dd></div>
+          <div class="full"><dt>📎 Adjuntos</dt>
+            <dd>
+              <ul class="attachments-list" id="detailAttachments"></ul>
+              <div class="attach-uploader">
+                <input type="file" id="attachInput" hidden />
+                <button type="button" class="btn btn-ghost btn-sm" id="attachBtn">+ Subir fichero</button>
+                <span class="attach-hint">Máx. 20 MB</span>
+              </div>
+            </dd>
+          </div>
         </dl>
         <p class="meta" id="detailMeta"></p>
         <div class="modal-actions">
@@ -126,6 +140,48 @@
           <button type="submit" class="btn btn-primary" id="saveBtn">Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal destinatarios -->
+  <div class="modal-backdrop" id="recipientsModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recipientsTitle">
+      <header class="modal-header">
+        <h3 id="recipientsTitle">Destinatarios de notificaciones</h3>
+        <button class="btn btn-icon" id="closeRecipientsModal" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="modal-body">
+        <div class="integrations-status" id="integrationsStatus"></div>
+
+        <ul class="recipients-list" id="recipientsList"></ul>
+
+        <form id="recipientForm" class="recipient-form">
+          <h4>Añadir destinatario</h4>
+          <div class="form-row two">
+            <label>Nombre *
+              <input type="text" id="rName" required maxlength="80" />
+            </label>
+            <label>Email
+              <input type="email" id="rEmail" maxlength="120" placeholder="persona@ejemplo.com" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>Teléfono WhatsApp
+              <input type="tel" id="rPhone" maxlength="20" placeholder="+34600000000" />
+            </label>
+          </div>
+          <div class="form-row checkboxes">
+            <label class="check">
+              <input type="checkbox" id="rNotifyEmail" checked /> Recibir por email
+            </label>
+            <label class="check">
+              <input type="checkbox" id="rNotifyWhatsapp" checked /> Recibir por WhatsApp
+            </label>
+          </div>
+          <div class="form-error" id="recipientError" hidden></div>
+          <button type="submit" class="btn btn-primary">Añadir</button>
+        </form>
+      </div>
     </div>
   </div>
 

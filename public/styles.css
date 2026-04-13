@@ -36,7 +36,72 @@ html, body {
   min-height: 100vh;
 }
 
-/* Header */
+/* ========= Login ========= */
+.login-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: radial-gradient(circle at top right, #1e293b, #0f172a);
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-brand h1 {
+  margin: 0.75rem 0 0.25rem 0;
+  font-size: 1.6rem;
+}
+
+.login-brand .logo {
+  width: 64px;
+  height: 64px;
+  font-size: 1.3rem;
+}
+
+.login-brand .subtitle {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.login-hint {
+  margin-top: 1.25rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+/* ========= Header ========= */
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -81,6 +146,13 @@ html, body {
   color: var(--text-dim);
 }
 
+.header-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .user-box {
   display: flex;
   flex-direction: column;
@@ -98,17 +170,17 @@ html, body {
   color: var(--text);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  min-width: 200px;
+  min-width: 180px;
 }
 
-/* Container */
+/* ========= Container ========= */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem;
 }
 
-/* Toolbar */
+/* ========= Toolbar ========= */
 .calendar-toolbar {
   display: flex;
   justify-content: space-between;
@@ -138,7 +210,7 @@ html, body {
   align-items: center;
 }
 
-/* Buttons */
+/* ========= Buttons ========= */
 .btn {
   background: var(--surface);
   color: var(--text);
@@ -156,6 +228,12 @@ html, body {
   transform: translateY(-1px);
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-icon {
   width: 38px;
   height: 38px;
@@ -164,6 +242,11 @@ html, body {
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 .btn-primary {
@@ -192,7 +275,8 @@ html, body {
   background: transparent;
 }
 
-select, input[type="text"], input[type="date"], input[type="time"], textarea {
+select, input[type="text"], input[type="date"], input[type="time"],
+input[type="email"], input[type="tel"], input[type="password"], textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
@@ -209,7 +293,7 @@ select:focus, input:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-/* Legend */
+/* ========= Legend ========= */
 .legend {
   display: flex;
   gap: 0.5rem;
@@ -236,7 +320,7 @@ select:focus, input:focus, textarea:focus {
   background: var(--type-otro);
 }
 
-/* Calendar grid */
+/* ========= Calendar grid ========= */
 .calendar {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -324,6 +408,12 @@ select:focus, input:focus, textarea:focus {
   filter: brightness(1.1);
 }
 
+.event-chip .chip-paperclip {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  margin-left: 0.25rem;
+}
+
 .event-more {
   font-size: 0.7rem;
   color: var(--text-dim);
@@ -335,7 +425,7 @@ select:focus, input:focus, textarea:focus {
   color: var(--text);
 }
 
-/* Upcoming */
+/* ========= Upcoming ========= */
 .upcoming {
   margin-top: 2rem;
 }
@@ -419,7 +509,7 @@ select:focus, input:focus, textarea:focus {
   letter-spacing: 0.5px;
 }
 
-/* Modal */
+/* ========= Modal ========= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -523,7 +613,72 @@ select:focus, input:focus, textarea:focus {
   margin-top: 1rem;
 }
 
-/* Form */
+/* ========= Attachments ========= */
+.attachments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.attachment-item .icon {
+  font-size: 1.1rem;
+}
+
+.attachment-item a {
+  color: var(--text);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-item a:hover {
+  text-decoration: underline;
+  color: var(--primary);
+}
+
+.attachment-item .size {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.attachment-item .btn-remove {
+  background: transparent;
+  border: 0;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  font-size: 1rem;
+}
+
+.attach-uploader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.attach-hint {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+/* ========= Form ========= */
 .form-row {
   margin-bottom: 1rem;
 }
@@ -542,6 +697,24 @@ select:focus, input:focus, textarea:focus {
   color: var(--text-dim);
 }
 
+.form-row.checkboxes {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.4rem !important;
+  color: var(--text) !important;
+}
+
+.check input {
+  width: auto;
+}
+
 .form-error {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid var(--danger);
@@ -552,7 +725,118 @@ select:focus, input:focus, textarea:focus {
   font-size: 0.85rem;
 }
 
-/* Toast */
+/* ========= Recipients ========= */
+.integrations-status {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.integration-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.integration-chip.on {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid #10b981;
+}
+
+.integration-chip.off {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.recipients-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.recipient-item {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recipient-item .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.recipient-item .name {
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+
+.recipient-item .contacts {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.recipient-item .channel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+}
+
+.recipient-item .channel-chip.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--primary);
+  color: #c7d2fe;
+}
+
+.recipient-item .btn-remove {
+  background: transparent;
+  border: 0;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.3rem;
+}
+
+.recipient-form {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.recipient-form h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+/* ========= Toast ========= */
 .toast {
   position: fixed;
   bottom: 1.5rem;
@@ -575,7 +859,7 @@ select:focus, input:focus, textarea:focus {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Responsive */
+/* ========= Responsive ========= */
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
@@ -585,6 +869,10 @@ select:focus, input:focus, textarea:focus {
   .user-box input {
     min-width: 0;
     width: 100%;
+  }
+
+  .header-actions {
+    justify-content: space-between;
   }
 
   .nav-controls h2 {
@@ -628,6 +916,10 @@ select:focus, input:focus, textarea:focus {
 
   .modal {
     max-height: 95vh;
+  }
+
+  .login-box {
+    padding: 1.5rem;
   }
 }
 
