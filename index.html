@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventPro - Calendario del Equipo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>EventPro</h1>
+      <span class="subtitle">Calendario del equipo</span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="calendar" role="tab">Calendario</button>
+      <button class="tab" data-view="team" role="tab">Equipo</button>
+      <button class="tab" data-view="data" role="tab">Datos</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <!-- VISTA CALENDARIO -->
+    <section id="view-calendar" class="view active">
+      <div class="calendar-toolbar">
+        <div class="nav-month">
+          <button id="prev-month" class="btn-icon" aria-label="Mes anterior">&#8249;</button>
+          <h2 id="current-month">—</h2>
+          <button id="next-month" class="btn-icon" aria-label="Mes siguiente">&#8250;</button>
+          <button id="today-btn" class="btn-secondary">Hoy</button>
+        </div>
+        <button id="new-event-btn" class="btn-primary">+ Nuevo evento</button>
+      </div>
+
+      <div class="calendar-weekdays">
+        <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+      </div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+    </section>
+
+    <!-- VISTA EQUIPO -->
+    <section id="view-team" class="view">
+      <div class="section-header">
+        <h2>Equipo</h2>
+        <p class="help">Agrega a las personas de tu equipo y asígnales un rol. Luego podrás incluirlas en los eventos.</p>
+      </div>
+
+      <form id="team-form" class="inline-form">
+        <input type="text" id="member-name" placeholder="Nombre" required />
+        <select id="member-role" required>
+          <option value="">Rol...</option>
+          <option value="Técnica">Técnica</option>
+          <option value="Producción">Producción</option>
+          <option value="Artistas">Artistas</option>
+          <option value="Logística">Logística</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <input type="text" id="member-contact" placeholder="Contacto (opcional)" />
+        <button type="submit" class="btn-primary">Agregar</button>
+      </form>
+
+      <div id="team-list" class="team-list"></div>
+    </section>
+
+    <!-- VISTA DATOS -->
+    <section id="view-data" class="view">
+      <div class="section-header">
+        <h2>Datos</h2>
+        <p class="help">Exporta una copia de seguridad o importa eventos y equipo desde un archivo JSON para compartir con otras personas.</p>
+      </div>
+      <div class="data-actions">
+        <button id="export-btn" class="btn-primary">Exportar JSON</button>
+        <label class="btn-secondary">
+          Importar JSON
+          <input type="file" id="import-input" accept="application/json" hidden />
+        </label>
+        <button id="reset-btn" class="btn-danger">Borrar todo</button>
+      </div>
+      <pre id="data-preview" class="data-preview"></pre>
+    </section>
+  </main>
+
+  <!-- MODAL: Lista de eventos de un día -->
+  <div id="day-modal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="day-modal-title">Eventos</h3>
+        <button class="btn-close" data-close-modal="day-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div id="day-events-list" class="day-events-list"></div>
+      <div class="modal-footer">
+        <button id="day-add-event-btn" class="btn-primary">+ Agregar evento este día</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Detalle de un evento -->
+  <div id="event-modal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="event-modal-title">Detalle del evento</h3>
+        <button class="btn-close" data-close-modal="event-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <div id="event-detail" class="event-detail"></div>
+      <div class="modal-footer">
+        <button id="edit-event-btn" class="btn-secondary">Editar</button>
+        <button id="delete-event-btn" class="btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Formulario de evento (crear/editar) -->
+  <div id="form-modal" class="modal" hidden>
+    <div class="modal-content modal-wide">
+      <div class="modal-header">
+        <h3 id="form-modal-title">Nuevo evento</h3>
+        <button class="btn-close" data-close-modal="form-modal" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="event-form" class="event-form">
+        <input type="hidden" id="event-id" />
+
+        <div class="field">
+          <label for="event-name">Nombre del evento</label>
+          <input type="text" id="event-name" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="event-date">Fecha</label>
+            <input type="date" id="event-date" required />
+          </div>
+          <div class="field">
+            <label for="event-time">Hora</label>
+            <input type="time" id="event-time" required />
+          </div>
+          <div class="field">
+            <label for="event-duration">Duración (min)</label>
+            <input type="number" id="event-duration" min="0" step="15" value="60" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="event-place">Lugar</label>
+          <input type="text" id="event-place" placeholder="Ej: Teatro Municipal, Sala A" />
+        </div>
+
+        <div class="field">
+          <label for="event-color">Color de etiqueta</label>
+          <div class="color-picker" id="event-color-picker">
+            <button type="button" data-color="#3b82f6" style="background:#3b82f6"></button>
+            <button type="button" data-color="#10b981" style="background:#10b981"></button>
+            <button type="button" data-color="#f59e0b" style="background:#f59e0b"></button>
+            <button type="button" data-color="#ef4444" style="background:#ef4444"></button>
+            <button type="button" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+            <button type="button" data-color="#ec4899" style="background:#ec4899"></button>
+            <button type="button" data-color="#14b8a6" style="background:#14b8a6"></button>
+          </div>
+          <input type="hidden" id="event-color" value="#3b82f6" />
+        </div>
+
+        <div class="field">
+          <label>Asistentes por rol</label>
+          <p class="help">Marca quién participa. Se agrupa automáticamente por rol.</p>
+          <div id="attendees-picker" class="attendees-picker"></div>
+        </div>
+
+        <div class="field">
+          <label for="event-notes">Notas</label>
+          <textarea id="event-notes" rows="3" placeholder="Información adicional, requerimientos técnicos, etc."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" data-close-modal="form-modal">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/team.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
