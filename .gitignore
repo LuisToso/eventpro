@@ -1,0 +1,10 @@
+node_modules/
+data/events.json
+data/recipients.json
+data/uploads/
+.env
+.DS_Store
+*.log
+npm-debug.log*
+.vscode/
+.idea/

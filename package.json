@@ -1,0 +1,27 @@
+{
+  "name": "eventpro",
+  "version": "1.1.0",
+  "description": "Calendario compartido para equipos de producción de eventos",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "calendar",
+    "team",
+    "events"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.5",
+    "twilio": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

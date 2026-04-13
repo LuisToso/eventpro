@@ -1,0 +1,47 @@
+# Blueprint de Render para desplegar EventPro con un clic.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: eventpro
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_PASSWORD
+        sync: false           # definirla manualmente en Render (secreto)
+      - key: SESSION_SECRET
+        generateValue: true   # Render genera un valor aleatorio seguro
+      - key: BASE_URL
+        sync: false           # p.ej. https://eventpro.onrender.com
+
+      # --- Email (opcional) ---
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+      # --- WhatsApp / Twilio (opcional) ---
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+
+    # Disco persistente (recomendado en producción para conservar
+    # eventos y adjuntos entre reinicios / deploys).
+    # OJO: los discos persistentes requieren un plan de pago en Render.
+    # Si usas el plan Free, los datos se perderán en cada redeploy.
+    disk:
+      name: eventpro-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

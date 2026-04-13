@@ -1,0 +1,32 @@
+{
+  "events": [
+    {
+      "id": "sample1",
+      "title": "Concierto apertura",
+      "date": "2026-04-20",
+      "time": "21:00",
+      "endTime": "23:00",
+      "location": "Sala Apolo, Barcelona",
+      "type": "concierto",
+      "description": "Rider técnico enviado. Llegada del grupo a las 18:00.",
+      "assignee": "María",
+      "createdAt": "2026-04-01T10:00:00.000Z",
+      "updatedAt": "2026-04-01T10:00:00.000Z",
+      "updatedBy": "María"
+    },
+    {
+      "id": "sample2",
+      "title": "Transporte del generador",
+      "date": "2026-04-19",
+      "time": "09:30",
+      "endTime": "",
+      "location": "Nave industrial → Sala Apolo",
+      "type": "transporte",
+      "description": "Coordinar con logística y acceso al muelle de carga.",
+      "assignee": "Pedro",
+      "createdAt": "2026-04-02T08:00:00.000Z",
+      "updatedAt": "2026-04-02T08:00:00.000Z",
+      "updatedBy": "Pedro"
+    }
+  ]
+}
