@@ -37,11 +37,13 @@ services:
       - key: TWILIO_WHATSAPP_FROM
         sync: false
 
-    # Disco persistente (recomendado en producción para conservar
-    # eventos y adjuntos entre reinicios / deploys).
-    # OJO: los discos persistentes requieren un plan de pago en Render.
-    # Si usas el plan Free, los datos se perderán en cada redeploy.
-    disk:
-      name: eventpro-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+    # ----------------------------------------------------------
+    # Disco persistente (RECOMENDADO en producción, requiere plan
+    # de pago en Render; el plan Free NO admite discos).
+    # Para activarlo, sube tu servicio a plan Starter o superior
+    # y descomenta el bloque siguiente.
+    # ----------------------------------------------------------
+    # disk:
+    #   name: eventpro-data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
