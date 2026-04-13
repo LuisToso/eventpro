@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e293b" />
+  <title>EventPro · Calendario del equipo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">EP</span>
+      <div>
+        <h1>EventPro</h1>
+        <p class="subtitle">Calendario compartido del equipo</p>
+      </div>
+    </div>
+
+    <div class="user-box">
+      <label for="userName">Tu nombre</label>
+      <input id="userName" type="text" placeholder="¿Quién eres?" />
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="calendar-toolbar">
+      <div class="nav-controls">
+        <button class="btn btn-icon" id="prevMonth" aria-label="Mes anterior">&larr;</button>
+        <h2 id="monthLabel">Mes</h2>
+        <button class="btn btn-icon" id="nextMonth" aria-label="Mes siguiente">&rarr;</button>
+        <button class="btn btn-ghost" id="todayBtn">Hoy</button>
+      </div>
+
+      <div class="filter-controls">
+        <select id="filterType">
+          <option value="">Todos los tipos</option>
+        </select>
+        <button class="btn btn-primary" id="newEventBtn">+ Nuevo evento</button>
+      </div>
+    </section>
+
+    <section class="legend" id="typeLegend"></section>
+
+    <section class="calendar" aria-label="Calendario mensual">
+      <div class="weekdays" id="weekdays"></div>
+      <div class="grid" id="calendarGrid"></div>
+    </section>
+
+    <section class="upcoming">
+      <h3>Próximos eventos</h3>
+      <ul id="upcomingList" class="upcoming-list"></ul>
+    </section>
+  </main>
+
+  <!-- Modal detalle/edición -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="modal-header">
+        <h3 id="modalTitle">Evento</h3>
+        <button class="btn btn-icon" id="closeModal" aria-label="Cerrar">✕</button>
+      </header>
+
+      <!-- Vista detalle -->
+      <div class="modal-body" id="detailView">
+        <div class="detail-type" id="detailType"></div>
+        <h2 id="detailTitle"></h2>
+        <dl class="detail-list">
+          <div><dt>📅 Fecha</dt><dd id="detailDate">—</dd></div>
+          <div><dt>🕒 Hora</dt><dd id="detailTime">—</dd></div>
+          <div><dt>📍 Lugar</dt><dd id="detailLocation">—</dd></div>
+          <div><dt>👤 Responsable</dt><dd id="detailAssignee">—</dd></div>
+          <div class="full"><dt>📝 Descripción</dt><dd id="detailDescription">—</dd></div>
+        </dl>
+        <p class="meta" id="detailMeta"></p>
+        <div class="modal-actions">
+          <button class="btn btn-danger" id="deleteBtn">Eliminar</button>
+          <button class="btn btn-primary" id="editBtn">Editar</button>
+        </div>
+      </div>
+
+      <!-- Formulario edición/creación -->
+      <form class="modal-body" id="formView" hidden>
+        <input type="hidden" id="eventId" />
+        <div class="form-row">
+          <label>Título *
+            <input type="text" id="fTitle" required maxlength="120" />
+          </label>
+        </div>
+        <div class="form-row two">
+          <label>Fecha *
+            <input type="date" id="fDate" required />
+          </label>
+          <label>Tipo *
+            <select id="fType" required></select>
+          </label>
+        </div>
+        <div class="form-row two">
+          <label>Hora inicio
+            <input type="time" id="fTime" />
+          </label>
+          <label>Hora fin
+            <input type="time" id="fEndTime" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Lugar
+            <input type="text" id="fLocation" maxlength="200" placeholder="Ej: Sala Apolo, Barcelona" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Responsable
+            <input type="text" id="fAssignee" maxlength="80" placeholder="Nombre del responsable" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Descripción
+            <textarea id="fDescription" rows="4" maxlength="2000" placeholder="Notas, equipamiento, contactos..."></textarea>
+          </label>
+        </div>
+
+        <div class="form-error" id="formError" hidden></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelEdit">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
