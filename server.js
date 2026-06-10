@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const RECIPIENTS_FILE = path.join(DATA_DIR, 'recipients.json');
+const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 // =====================================================
@@ -54,6 +55,9 @@ function ensureDirs() {
       JSON.stringify({ recipients: [] }, null, 2)
     );
   }
+  if (!fs.existsSync(PROJECTS_FILE)) {
+    fs.writeFileSync(PROJECTS_FILE, JSON.stringify({ projects: [] }, null, 2));
+  }
 }
 ensureDirs();
 
@@ -85,6 +89,21 @@ function readRecipients() {
 }
 function writeRecipients(data) {
   fs.writeFileSync(RECIPIENTS_FILE, JSON.stringify(data, null, 2));
+}
+
+function readProjects() {
+  ensureDirs();
+  try {
+    const data = JSON.parse(fs.readFileSync(PROJECTS_FILE, 'utf-8'));
+    if (!Array.isArray(data.projects)) data.projects = [];
+    return data;
+  } catch (err) {
+    console.error('Error leyendo proyectos:', err);
+    return { projects: [] };
+  }
+}
+function writeProjects(data) {
+  fs.writeFileSync(PROJECTS_FILE, JSON.stringify(data, null, 2));
 }
 
 function generateId() {
@@ -193,6 +212,8 @@ function sanitizeEvent(body, existing = {}) {
     type: body.type ? String(body.type).trim() : 'otro',
     description: body.description ? String(body.description).trim() : '',
     assignee: body.assignee ? String(body.assignee).trim() : '',
+    projectId: body.projectId ? String(body.projectId).trim() : (existing.projectId || null),
+    projectName: body.projectName ? String(body.projectName).trim() : (existing.projectName || null),
     attachments: existing.attachments || [],
     createdAt: existing.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -394,6 +415,123 @@ app.delete('/api/recipients/:id', (req, res) => {
     return res.status(404).json({ error: 'Destinatario no encontrado' });
   const removed = data.recipients.splice(idx, 1)[0];
   writeRecipients(data);
+  res.json(removed);
+});
+
+// =====================================================
+// Validación y saneado de proyectos
+// =====================================================
+const VALID_PROJECT_STATUSES = ['activo', 'pausado', 'finalizado'];
+const VALID_PROJECT_COLORS = [
+  '#f97316', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7',
+  '#eab308', '#14b8a6', '#3b82f6', '#ec4899', '#10b981'
+];
+
+function validateProject(body) {
+  const errors = [];
+  if (!body || typeof body !== 'object') {
+    errors.push('Cuerpo inválido');
+    return errors;
+  }
+  if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
+    errors.push('El nombre del proyecto es obligatorio');
+  }
+  if (body.status && !VALID_PROJECT_STATUSES.includes(body.status)) {
+    errors.push('Estado inválido. Valores posibles: activo, pausado, finalizado');
+  }
+  if (body.color && !VALID_PROJECT_COLORS.includes(body.color)) {
+    errors.push('Color inválido');
+  }
+  return errors;
+}
+
+function sanitizeProject(body, existing = {}) {
+  return {
+    id: existing.id || generateId(),
+    name: String(body.name || '').trim(),
+    color: body.color || existing.color || '#3b82f6',
+    description: body.description ? String(body.description).trim() : (existing.description || ''),
+    status: body.status || existing.status || 'activo',
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    updatedBy: body.updatedBy
+      ? String(body.updatedBy).trim()
+      : existing.updatedBy || ''
+  };
+}
+
+// =====================================================
+// API de proyectos
+// =====================================================
+app.get('/api/projects', (req, res) => {
+  res.json(readProjects().projects);
+});
+
+app.get('/api/projects/:id', (req, res) => {
+  const project = readProjects().projects.find((p) => p.id === req.params.id);
+  if (!project) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  res.json(project);
+});
+
+app.post('/api/projects', (req, res) => {
+  const errors = validateProject(req.body);
+  if (errors.length) return res.status(400).json({ errors });
+
+  const data = readProjects();
+  const project = sanitizeProject(req.body);
+  data.projects.push(project);
+  writeProjects(data);
+  res.status(201).json(project);
+});
+
+app.put('/api/projects/:id', (req, res) => {
+  const errors = validateProject(req.body);
+  if (errors.length) return res.status(400).json({ errors });
+
+  const data = readProjects();
+  const idx = data.projects.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Proyecto no encontrado' });
+
+  const updated = sanitizeProject(req.body, data.projects[idx]);
+  data.projects[idx] = updated;
+  writeProjects(data);
+
+  // Si cambia el nombre del proyecto, actualizar projectName en los eventos
+  if (req.body.name && req.body.name.trim() !== data.projects[idx - 0].name) {
+    // idx was already updated above — use updated.name
+    const evData = readEvents();
+    let changed = false;
+    evData.events.forEach((ev) => {
+      if (ev.projectId === updated.id) {
+        ev.projectName = updated.name;
+        changed = true;
+      }
+    });
+    if (changed) writeEvents(evData);
+  }
+
+  res.json(updated);
+});
+
+app.delete('/api/projects/:id', (req, res) => {
+  const data = readProjects();
+  const idx = data.projects.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Proyecto no encontrado' });
+  const removed = data.projects.splice(idx, 1)[0];
+  writeProjects(data);
+
+  // Deslincar eventos del proyecto eliminado
+  const evData = readEvents();
+  let changed = false;
+  evData.events.forEach((ev) => {
+    if (ev.projectId === removed.id) {
+      ev.projectId = null;
+      ev.projectName = null;
+      changed = true;
+    }
+  });
+  if (changed) writeEvents(evData);
+
   res.json(removed);
 });
 

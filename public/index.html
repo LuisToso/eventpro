@@ -22,6 +22,7 @@
         <label for="userName">Tu nombre</label>
         <input id="userName" type="text" placeholder="¿Quién eres?" />
       </div>
+      <button class="btn btn-ghost" id="projectsBtn" title="Gestionar proyectos">📁 Proyectos</button>
       <button class="btn btn-ghost" id="recipientsBtn" title="Destinatarios de notificaciones">👥 Destinatarios</button>
       <button class="btn btn-ghost" id="logoutBtn" title="Cerrar sesión">🚪 Salir</button>
     </div>
@@ -39,6 +40,9 @@
       <div class="filter-controls">
         <select id="filterType">
           <option value="">Todos los tipos</option>
+        </select>
+        <select id="filterProject">
+          <option value="">Todos los proyectos</option>
         </select>
         <button class="btn btn-primary" id="newEventBtn">+ Nuevo evento</button>
       </div>
@@ -68,6 +72,7 @@
       <!-- Vista detalle -->
       <div class="modal-body" id="detailView">
         <div class="detail-type" id="detailType"></div>
+        <div id="detailProjectBadge" hidden></div>
         <h2 id="detailTitle"></h2>
         <dl class="detail-list">
           <div><dt>📅 Fecha</dt><dd id="detailDate">—</dd></div>
