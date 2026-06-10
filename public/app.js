@@ -1,4 +1,9 @@
 // ============ Configuración ============
+const PROJECT_COLORS = [
+  '#f97316', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7',
+  '#eab308', '#14b8a6', '#3b82f6', '#ec4899', '#10b981'
+];
+
 const EVENT_TYPES = [
   { value: 'concierto', label: 'Concierto', color: 'var(--type-concierto)' },
   { value: 'teatro', label: 'Obra de teatro', color: 'var(--type-teatro)' },
@@ -22,10 +27,12 @@ const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const state = {
   events: [],
   recipients: [],
+  projects: [],
   integrations: { email: false, whatsapp: false },
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
   filterType: '',
+  filterProject: '',
   userName: localStorage.getItem('eventpro_user') || ''
 };
 
@@ -139,6 +146,20 @@ async function loadRecipients() {
   }
 }
 
+async function loadProjects() {
+  try {
+    state.projects = await api('/api/projects');
+    renderProjectFilter();
+    renderProjectFormOptions();
+  } catch (err) {
+    showToast('Error cargando proyectos: ' + err.message, 'error');
+  }
+}
+
+function getProjectById(id) {
+  return state.projects.find((p) => p.id === id) || null;
+}
+
 // ============ Render calendario ============
 function renderWeekdays() {
   $('weekdays').innerHTML = WEEKDAYS.map((w) => `<div class="weekday">${w}</div>`).join('');
@@ -208,17 +229,30 @@ function createDayCell(date, otherMonth, today) {
   const dayEvents = state.events
     .filter((e) => e.date === iso)
     .filter((e) => !state.filterType || e.type === state.filterType)
+    .filter((e) => !state.filterProject || e.projectId === state.filterProject)
     .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
 
   const maxVisible = 3;
   dayEvents.slice(0, maxVisible).forEach((ev) => {
     const chip = document.createElement('div');
-    chip.className = 'event-chip';
     const type = getTypeConfig(ev.type);
+    const project = ev.projectId ? getProjectById(ev.projectId) : null;
+    chip.className = 'event-chip' + (project ? ' has-project' : '');
     chip.style.background = type.color;
+    if (project) {
+      chip.style.borderLeftColor = project.color;
+    }
     const label = (ev.time ? ev.time + ' ' : '') + ev.title;
-    chip.title = label;
-    chip.textContent = label;
+    chip.title = label + (project ? ' · ' + project.name : '');
+    // Project dot
+    if (project) {
+      const dot = document.createElement('span');
+      dot.className = 'chip-proj-dot';
+      dot.style.background = project.color;
+      chip.appendChild(dot);
+    }
+    const text = document.createTextNode(label);
+    chip.appendChild(text);
     if (ev.attachments && ev.attachments.length) {
       const clip = document.createElement('span');
       clip.className = 'chip-paperclip';
@@ -254,6 +288,7 @@ function renderUpcoming() {
   const upcoming = state.events
     .filter((e) => parseDate(e.date) >= today)
     .filter((e) => !state.filterType || e.type === state.filterType)
+    .filter((e) => !state.filterProject || e.projectId === state.filterProject)
     .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''))
     .slice(0, 6);
 
@@ -320,6 +355,30 @@ function openDetail(event) {
   const typeEl = $('detailType');
   typeEl.textContent = type.label;
   typeEl.style.background = type.color;
+
+  // Project badge
+  const badgeEl = $('detailProjectBadge');
+  const project = event.projectId ? getProjectById(event.projectId) : null;
+  if (project) {
+    badgeEl.hidden = false;
+    badgeEl.innerHTML = '';
+    const badge = document.createElement('span');
+    badge.className = 'project-badge';
+    badge.style.background = project.color;
+    badge.title = 'Ver proyecto: ' + project.name;
+    const dot = document.createElement('span');
+    dot.className = 'project-badge-dot';
+    badge.appendChild(dot);
+    badge.appendChild(document.createTextNode('📁 ' + project.name));
+    badge.addEventListener('click', () => {
+      closeModal();
+      openProjectsModal(project.id);
+    });
+    badgeEl.appendChild(badge);
+  } else {
+    badgeEl.hidden = true;
+    badgeEl.innerHTML = '';
+  }
 
   $('detailTitle').textContent = event.title;
   const d = parseDate(event.date);
@@ -441,6 +500,7 @@ function openForm(event, defaultDate) {
   $('fEndTime').value = event ? (event.endTime || '') : '';
   $('fLocation').value = event ? (event.location || '') : '';
   $('fAssignee').value = event ? (event.assignee || '') : (state.userName || '');
+  $('fProject').value = event ? (event.projectId || '') : (state.filterProject || '');
   $('fDescription').value = event ? (event.description || '') : '';
 
   openModal();
@@ -450,6 +510,8 @@ function openForm(event, defaultDate) {
 async function saveEvent(e) {
   e.preventDefault();
   const id = $('eventId').value;
+  const selectedProjectId = $('fProject').value;
+  const selectedProject = selectedProjectId ? getProjectById(selectedProjectId) : null;
   const payload = {
     title: $('fTitle').value.trim(),
     date: $('fDate').value,
@@ -459,6 +521,8 @@ async function saveEvent(e) {
     location: $('fLocation').value.trim(),
     assignee: $('fAssignee').value.trim(),
     description: $('fDescription').value.trim(),
+    projectId: selectedProjectId || null,
+    projectName: selectedProject ? selectedProject.name : null,
     updatedBy: state.userName || ''
   };
   if (!payload.title) return formError('El título es obligatorio');
@@ -626,6 +690,446 @@ async function deleteRecipient(id) {
   }
 }
 
+// ============ Projects filter & form helpers ============
+function renderProjectFilter() {
+  const sel = $('filterProject');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos los proyectos</option>' +
+    state.projects.map((p) =>
+      `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`
+    ).join('');
+  if (state.projects.find((p) => p.id === current)) sel.value = current;
+}
+
+function renderProjectFormOptions() {
+  const sel = $('fProject');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Sin proyecto</option>' +
+    state.projects.map((p) =>
+      `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`
+    ).join('');
+  if (state.projects.find((p) => p.id === current)) sel.value = current;
+}
+
+// ============ Projects modal ============
+let projectsPanelMode = 'list'; // 'list' | 'detail' | 'edit'
+let currentProjectId = null;
+let selectedNewProjectColor = PROJECT_COLORS[7]; // default azul
+
+function openProjectsModal(focusProjectId) {
+  currentProjectId = focusProjectId || null;
+  projectsPanelMode = focusProjectId ? 'detail' : 'list';
+  selectedNewProjectColor = PROJECT_COLORS[7];
+  renderProjectsPanel();
+  $('projectsModal').hidden = false;
+}
+
+function closeProjectsModal() {
+  $('projectsModal').hidden = true;
+  currentProjectId = null;
+  projectsPanelMode = 'list';
+}
+
+function renderProjectsPanel() {
+  if (projectsPanelMode === 'list') renderProjectsList();
+  else if (projectsPanelMode === 'detail') renderProjectDetail();
+  else if (projectsPanelMode === 'edit') renderProjectEdit();
+}
+
+function renderProjectsList() {
+  const body = $('projectsPanelBody');
+  body.innerHTML = '';
+
+  const panel = document.createElement('div');
+  panel.className = 'projects-panel';
+
+  // List
+  const list = document.createElement('ul');
+  list.className = 'projects-list';
+
+  if (state.projects.length === 0) {
+    const li = document.createElement('li');
+    li.style.cssText = 'color:var(--text-dim);text-align:center;padding:1rem;';
+    li.textContent = 'No hay proyectos. Crea uno abajo.';
+    list.appendChild(li);
+  } else {
+    state.projects.forEach((p) => {
+      const evCount = state.events.filter((e) => e.projectId === p.id).length;
+      const li = document.createElement('li');
+      li.className = 'project-item';
+      li.innerHTML = `
+        <div class="project-color-dot" style="background:${escapeHtml(p.color)}"></div>
+        <div class="project-info">
+          <div class="project-name"></div>
+          <div class="project-meta">
+            <span class="project-status-badge ${escapeHtml(p.status)}">${escapeHtml(p.status)}</span>
+            <span class="project-event-count">${evCount} evento${evCount !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+      `;
+      li.querySelector('.project-name').textContent = p.name;
+      li.addEventListener('click', () => {
+        currentProjectId = p.id;
+        projectsPanelMode = 'detail';
+        renderProjectsPanel();
+      });
+      list.appendChild(li);
+    });
+  }
+  panel.appendChild(list);
+
+  // New project form
+  const formSection = document.createElement('div');
+  formSection.className = 'new-project-form';
+  formSection.innerHTML = `
+    <h4>Nuevo proyecto</h4>
+    <div class="form-row">
+      <label>Nombre *
+        <input type="text" id="pName" maxlength="120" placeholder="Ej: Pulso Naranja Tour" />
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Color
+        <div class="color-palette" id="colorPalette"></div>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Descripción
+        <textarea id="pDescription" rows="2" maxlength="500" placeholder="Descripción del proyecto..."></textarea>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Estado
+        <select id="pStatus">
+          <option value="activo">Activo</option>
+          <option value="pausado">Pausado</option>
+          <option value="finalizado">Finalizado</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-error" id="projectFormError" hidden></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="saveNewProjectBtn">Crear proyecto</button>
+    </div>
+  `;
+  panel.appendChild(formSection);
+  body.appendChild(panel);
+
+  // Render color palette
+  renderColorPalette('colorPalette', selectedNewProjectColor, (color) => {
+    selectedNewProjectColor = color;
+  });
+
+  $('saveNewProjectBtn').addEventListener('click', saveNewProject);
+}
+
+function renderColorPalette(containerId, selected, onChange) {
+  const container = $(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  PROJECT_COLORS.forEach((color) => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch' + (color === selected ? ' selected' : '');
+    swatch.style.background = color;
+    swatch.title = color;
+    swatch.addEventListener('click', () => {
+      container.querySelectorAll('.color-swatch').forEach((s) => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      onChange(color);
+    });
+    container.appendChild(swatch);
+  });
+}
+
+async function saveNewProject() {
+  const name = ($('pName').value || '').trim();
+  const errEl = $('projectFormError');
+  errEl.hidden = true;
+  if (!name) {
+    errEl.textContent = 'El nombre es obligatorio';
+    errEl.hidden = false;
+    return;
+  }
+  const payload = {
+    name,
+    color: selectedNewProjectColor,
+    description: ($('pDescription').value || '').trim(),
+    status: $('pStatus').value || 'activo',
+    updatedBy: state.userName || ''
+  };
+  try {
+    const created = await api('/api/projects', { method: 'POST', body: JSON.stringify(payload) });
+    state.projects.push(created);
+    renderProjectFilter();
+    renderProjectFormOptions();
+    showToast('Proyecto creado');
+    currentProjectId = created.id;
+    projectsPanelMode = 'detail';
+    renderProjectsPanel();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.hidden = false;
+  }
+}
+
+function renderProjectDetail() {
+  const project = state.projects.find((p) => p.id === currentProjectId);
+  if (!project) { projectsPanelMode = 'list'; renderProjectsPanel(); return; }
+
+  const projectEvents = state.events
+    .filter((e) => e.projectId === project.id)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+
+  const body = $('projectsPanelBody');
+  body.innerHTML = '';
+
+  const view = document.createElement('div');
+  view.className = 'project-detail-view';
+
+  // Back button
+  const backBtn = document.createElement('button');
+  backBtn.className = 'btn btn-ghost btn-sm';
+  backBtn.textContent = '← Volver a proyectos';
+  backBtn.addEventListener('click', () => {
+    projectsPanelMode = 'list';
+    renderProjectsPanel();
+  });
+  view.appendChild(backBtn);
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'project-detail-header';
+  const colorDot = document.createElement('div');
+  colorDot.className = 'project-detail-color';
+  colorDot.style.background = project.color;
+  const titleEl = document.createElement('h3');
+  titleEl.className = 'project-detail-title';
+  titleEl.textContent = project.name;
+  const statusBadge = document.createElement('span');
+  statusBadge.className = `project-status-badge ${project.status}`;
+  statusBadge.textContent = project.status;
+  header.appendChild(colorDot);
+  header.appendChild(titleEl);
+  header.appendChild(statusBadge);
+  view.appendChild(header);
+
+  if (project.description) {
+    const desc = document.createElement('p');
+    desc.className = 'project-detail-desc';
+    desc.textContent = project.description;
+    view.appendChild(desc);
+  }
+
+  // Events list
+  const evHeader = document.createElement('div');
+  evHeader.style.cssText = 'font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:0.25rem;';
+  evHeader.textContent = `${projectEvents.length} evento${projectEvents.length !== 1 ? 's' : ''}`;
+  view.appendChild(evHeader);
+
+  if (projectEvents.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color:var(--text-dim);font-size:0.85rem;';
+    empty.textContent = 'No hay eventos en este proyecto.';
+    view.appendChild(empty);
+  } else {
+    const evList = document.createElement('ul');
+    evList.className = 'project-events-list';
+    projectEvents.forEach((ev) => {
+      const type = getTypeConfig(ev.type);
+      const li = document.createElement('li');
+      li.className = 'project-event-item';
+      li.style.borderLeftColor = project.color;
+
+      const dateEl = document.createElement('span');
+      dateEl.className = 'project-event-date';
+      const d = parseDate(ev.date);
+      dateEl.textContent = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'project-event-title';
+      titleSpan.textContent = ev.title;
+
+      const typeSpan = document.createElement('span');
+      typeSpan.className = 'project-event-type';
+      typeSpan.style.background = type.color;
+      typeSpan.textContent = type.label;
+
+      const metaSpan = document.createElement('span');
+      metaSpan.className = 'project-event-meta';
+      const metaParts = [];
+      if (ev.time) metaParts.push(ev.time);
+      if (ev.location) metaParts.push(ev.location);
+      if (ev.assignee) metaParts.push(ev.assignee);
+      metaSpan.textContent = metaParts.join(' · ');
+
+      li.appendChild(dateEl);
+      li.appendChild(titleSpan);
+      li.appendChild(typeSpan);
+      if (metaSpan.textContent) li.appendChild(metaSpan);
+
+      li.addEventListener('click', () => {
+        closeProjectsModal();
+        openDetail(ev);
+      });
+      evList.appendChild(li);
+    });
+    view.appendChild(evList);
+  }
+
+  // Actions
+  const actions = document.createElement('div');
+  actions.className = 'modal-actions';
+  actions.style.borderTop = '1px solid var(--border)';
+  actions.style.paddingTop = '1rem';
+  actions.style.marginTop = '0.5rem';
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-ghost';
+  editBtn.textContent = 'Editar proyecto';
+  editBtn.addEventListener('click', () => {
+    projectsPanelMode = 'edit';
+    renderProjectsPanel();
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.textContent = 'Eliminar proyecto';
+  deleteBtn.addEventListener('click', () => deleteProject(project.id));
+
+  actions.appendChild(editBtn);
+  actions.appendChild(deleteBtn);
+  view.appendChild(actions);
+
+  body.appendChild(view);
+}
+
+let editProjectColor = '';
+
+function renderProjectEdit() {
+  const project = state.projects.find((p) => p.id === currentProjectId);
+  if (!project) { projectsPanelMode = 'list'; renderProjectsPanel(); return; }
+
+  editProjectColor = project.color;
+
+  const body = $('projectsPanelBody');
+  body.innerHTML = '';
+
+  const view = document.createElement('div');
+  view.className = 'project-detail-view';
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'btn btn-ghost btn-sm';
+  backBtn.textContent = '← Cancelar';
+  backBtn.addEventListener('click', () => {
+    projectsPanelMode = 'detail';
+    renderProjectsPanel();
+  });
+  view.appendChild(backBtn);
+
+  const formHtml = `
+    <div class="form-row">
+      <label>Nombre *
+        <input type="text" id="pEditName" maxlength="120" value="${escapeHtml(project.name)}" />
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Color
+        <div class="color-palette" id="editColorPalette"></div>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Descripción
+        <textarea id="pEditDescription" rows="2" maxlength="500">${escapeHtml(project.description || '')}</textarea>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Estado
+        <select id="pEditStatus">
+          <option value="activo" ${project.status === 'activo' ? 'selected' : ''}>Activo</option>
+          <option value="pausado" ${project.status === 'pausado' ? 'selected' : ''}>Pausado</option>
+          <option value="finalizado" ${project.status === 'finalizado' ? 'selected' : ''}>Finalizado</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-error" id="projectEditError" hidden></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary" id="saveEditProjectBtn">Guardar cambios</button>
+    </div>
+  `;
+  const formDiv = document.createElement('div');
+  formDiv.innerHTML = formHtml;
+  view.appendChild(formDiv);
+  body.appendChild(view);
+
+  renderColorPalette('editColorPalette', editProjectColor, (color) => {
+    editProjectColor = color;
+  });
+
+  $('saveEditProjectBtn').addEventListener('click', () => saveEditProject(project.id));
+}
+
+async function saveEditProject(id) {
+  const name = ($('pEditName').value || '').trim();
+  const errEl = $('projectEditError');
+  errEl.hidden = true;
+  if (!name) {
+    errEl.textContent = 'El nombre es obligatorio';
+    errEl.hidden = false;
+    return;
+  }
+  const payload = {
+    name,
+    color: editProjectColor,
+    description: ($('pEditDescription').value || '').trim(),
+    status: $('pEditStatus').value || 'activo',
+    updatedBy: state.userName || ''
+  };
+  try {
+    const updated = await api(`/api/projects/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    const idx = state.projects.findIndex((p) => p.id === id);
+    if (idx !== -1) state.projects[idx] = updated;
+    // Update projectName on events in local state
+    state.events.forEach((ev) => {
+      if (ev.projectId === id) ev.projectName = updated.name;
+    });
+    renderProjectFilter();
+    renderProjectFormOptions();
+    renderAll();
+    showToast('Proyecto actualizado');
+    projectsPanelMode = 'detail';
+    renderProjectsPanel();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.hidden = false;
+  }
+}
+
+async function deleteProject(id) {
+  const project = state.projects.find((p) => p.id === id);
+  if (!project) return;
+  if (!confirm(`¿Eliminar proyecto "${project.name}"? Los eventos quedarán sin proyecto.`)) return;
+  try {
+    await api(`/api/projects/${id}`, { method: 'DELETE' });
+    state.projects = state.projects.filter((p) => p.id !== id);
+    // Clear project from local events state
+    state.events.forEach((ev) => {
+      if (ev.projectId === id) {
+        ev.projectId = null;
+        ev.projectName = null;
+      }
+    });
+    renderProjectFilter();
+    renderProjectFormOptions();
+    renderAll();
+    showToast('Proyecto eliminado');
+    projectsPanelMode = 'list';
+    currentProjectId = null;
+    renderProjectsPanel();
+  } catch (err) {
+    showToast('Error al eliminar: ' + err.message, 'error');
+  }
+}
+
 // ============ Navegación ============
 function changeMonth(delta) {
   state.currentMonth += delta;
@@ -704,9 +1208,15 @@ async function init() {
   // Nuevo evento
   $('newEventBtn').addEventListener('click', () => openForm(null));
 
-  // Filtro
+  // Filtro tipo
   $('filterType').addEventListener('change', (e) => {
     state.filterType = e.target.value;
+    renderAll();
+  });
+
+  // Filtro proyecto
+  $('filterProject').addEventListener('change', (e) => {
+    state.filterProject = e.target.value;
     renderAll();
   });
 
@@ -719,6 +1229,7 @@ async function init() {
     if (e.key === 'Escape') {
       if (!$('modal').hidden) closeModal();
       else if (!$('recipientsModal').hidden) closeRecipientsModal();
+      else if (!$('projectsModal').hidden) closeProjectsModal();
     }
   });
 
@@ -741,6 +1252,13 @@ async function init() {
     }
   });
 
+  // Proyectos
+  $('projectsBtn').addEventListener('click', () => openProjectsModal());
+  $('closeProjectsModal').addEventListener('click', closeProjectsModal);
+  $('projectsModal').addEventListener('click', (e) => {
+    if (e.target.id === 'projectsModal') closeProjectsModal();
+  });
+
   // Destinatarios
   $('recipientsBtn').addEventListener('click', openRecipientsModal);
   $('closeRecipientsModal').addEventListener('click', closeRecipientsModal);
@@ -752,6 +1270,7 @@ async function init() {
   // Logout
   $('logoutBtn').addEventListener('click', logout);
 
+  await loadProjects();
   await loadEvents();
   await loadIntegrations();
   setInterval(checkUpdates, 15000);

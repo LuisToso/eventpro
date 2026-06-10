@@ -133,6 +133,13 @@
           </label>
         </div>
         <div class="form-row">
+          <label>Proyecto
+            <select id="fProject">
+              <option value="">Sin proyecto</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
           <label>Descripción
             <textarea id="fDescription" rows="4" maxlength="2000" placeholder="Notas, equipamiento, contactos..."></textarea>
           </label>
@@ -145,6 +152,19 @@
           <button type="submit" class="btn btn-primary" id="saveBtn">Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal proyectos -->
+  <div class="modal-backdrop projects-modal" id="projectsModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="projectsTitle">
+      <header class="modal-header">
+        <h3 id="projectsTitle">Proyectos</h3>
+        <button class="btn btn-icon" id="closeProjectsModal" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="modal-body" id="projectsPanelBody">
+        <!-- Se rellena dinámicamente -->
+      </div>
     </div>
   </div>
 
